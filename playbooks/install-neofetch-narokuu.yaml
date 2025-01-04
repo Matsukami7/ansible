@@ -30,3 +30,43 @@
         executable: /bin/bash
       become: yes
       become_user: narokuu
+
+    # Modify Neofetch configuration for user "narokuu"
+    - name: Ensure Neofetch config directory exists
+      file:
+        path: /home/narokuu/.config/neofetch
+        state: directory
+        owner: narokuu
+        group: narokuu
+        mode: '0755'
+
+    - name: Create or update Neofetch config file
+      copy:
+        dest: /home/narokuu/.config/neofetch/config.conf
+        content: |
+          # Neofetch configuration file
+          # See https://github.com/dylanaraps/neofetch/wiki/Customizing-Info for customization options
+
+          # Default display options
+          print_info() {
+            info title
+            info underline
+            info "OS" distro
+            info "Kernel" kernel
+            info "Uptime" uptime
+            info "Packages" packages
+            info "Shell" shell
+            info "Resolution" resolution
+            info "DE" de
+            info "WM" wm
+            info "Theme" theme
+            info "Icons" icons
+            info "Terminal" term
+            info "CPU" cpu
+            info "Memory" memory
+            info "Disk" disk
+            info "IP Address" ip
+          }
+        owner: narokuu
+        group: narokuu
+        mode: '0644'
