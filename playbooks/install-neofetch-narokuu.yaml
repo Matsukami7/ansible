@@ -1,0 +1,32 @@
+- hosts: "{{ hosts }}"
+  become: yes
+  become_user: root
+  tasks:
+    # Update apt cache
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    # Install Neofetch
+    - name: Install Neofetch
+      apt:
+        name: neofetch
+        state: present
+
+    # Add Neofetch to .bashrc for user "narokuu"
+    - name: Ensure Neofetch runs on startup for user "narokuu"
+      lineinfile:
+        path: /home/narokuu/.bashrc
+        line: "neofetch"
+        state: present
+        create: yes
+      become: yes
+      become_user: narokuu
+
+    # Reload .bashrc for user "narokuu"
+    - name: Reload .bashrc for user "narokuu"
+      shell: source /home/narokuu/.bashrc
+      args:
+        executable: /bin/bash
+      become: yes
+      become_user: narokuu
