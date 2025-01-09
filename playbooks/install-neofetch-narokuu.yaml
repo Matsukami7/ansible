@@ -1,6 +1,5 @@
 - hosts: all
   become: yes
-  become_user: root
   tasks:
     # Update apt cache
     - name: Update apt cache
@@ -13,36 +12,35 @@
         name: neofetch
         state: present
 
-    # Add Neofetch to .bashrc for user "narokuu"
-    - name: Ensure Neofetch runs on startup for user "narokuu"
+    # Ensure Neofetch runs on startup for "root" and "narokuu"
+    - name: Ensure Neofetch runs on startup for each user
       lineinfile:
-        path: /home/narokuu/.bashrc
+        path: "{{ item }}/.bashrc"
         line: "neofetch"
         state: present
         create: yes
+      with_items:
+        - /root
+        - /home/narokuu
       become: yes
-      become_user: narokuu
 
-    # Reload .bashrc for user "narokuu"
-    - name: Reload .bashrc for user "narokuu"
-      shell: source /home/narokuu/.bashrc
-      args:
-        executable: /bin/bash
-      become: yes
-      become_user: narokuu
-
-    # Modify Neofetch configuration for user "narokuu"
-    - name: Ensure Neofetch config directory exists
+    # Ensure Neofetch config directory exists for "root" and "narokuu"
+    - name: Ensure Neofetch config directory exists for each user
       file:
-        path: /home/narokuu/.config/neofetch
+        path: "{{ item }}/.config/neofetch"
         state: directory
-        owner: narokuu
-        group: narokuu
+        owner: "{{ item | regex_replace('/home/', '') | regex_replace('/root', 'root') }}"
+        group: "{{ item | regex_replace('/home/', '') | regex_replace('/root', 'root') }}"
         mode: '0755'
+      with_items:
+        - /root
+        - /home/narokuu
+      become: yes
 
-    - name: Create or update Neofetch config file
+    # Create or update Neofetch config file for "root" and "narokuu"
+    - name: Create or update Neofetch config file for each user
       copy:
-        dest: /home/narokuu/.config/neofetch/config.conf
+        dest: "{{ item }}/.config/neofetch/config.conf"
         content: |
           # Neofetch configuration file
           # See https://github.com/dylanaraps/neofetch/wiki/Customizing-Info for customization options
@@ -67,6 +65,10 @@
             info "Disk" disk
             info "IP Address" ip
           }
-        owner: narokuu
-        group: narokuu
+        owner: "{{ item | regex_replace('/home/', '') | regex_replace('/root', 'root') }}"
+        group: "{{ item | regex_replace('/home/', '') | regex_replace('/root', 'root') }}"
         mode: '0644'
+      with_items:
+        - /root
+        - /home/narokuu
+      become: yes
