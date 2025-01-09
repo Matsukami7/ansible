@@ -1,6 +1,11 @@
 - hosts: all
   become: yes
   tasks:
+    # Set SSH key dynamically
+    - name: Set SSH key for authentication
+      set_fact:
+        ssh_key: "{{ 'naromainkey' }}"
+
     # Update apt cache
     - name: Update apt cache
       apt:
@@ -72,3 +77,8 @@
         owner: "{{ target_user }}"
         group: "{{ target_user }}"
         mode: '0644'
+
+    # Optional: Test SSH authentication using the specified key
+    - name: Test SSH authentication
+      command: ssh -i /path/to/{{ ssh_key }} {{ target_user }}@{{ inventory_hostname }} "echo 'SSH test successful'"
+      ignore_errors: yes
