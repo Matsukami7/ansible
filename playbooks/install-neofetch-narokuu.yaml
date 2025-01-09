@@ -1,11 +1,6 @@
 - hosts: all
   become: yes
   tasks:
-    # Set SSH key dynamically
-    - name: Set SSH key for authentication
-      set_fact:
-        ssh_key: "{{ 'naromainkey' }}"
-
     # Update apt cache
     - name: Update apt cache
       apt:
@@ -23,33 +18,43 @@
       register: narokuu_user_check
       ignore_errors: yes
 
-    # Set target user based on presence of "narokuu"
-    - name: Set target user variable
+    # Set target users (root and optionally narokuu)
+    - name: Set target users list
       set_fact:
-        target_user: "{{ 'narokuu' if narokuu_user_check.rc == 0 else 'root' }}"
-        target_home: "{{ '/home/narokuu' if narokuu_user_check.rc == 0 else '/root' }}"
+        target_users:
+          - { name: "root", home: "/root" }
+          - { name: "narokuu", home: "/home/narokuu" }
+      when: narokuu_user_check.rc == 0
 
-    # Ensure Neofetch runs on startup for the target user
+    - name: Set target user to only root if narokuu is absent
+      set_fact:
+        target_users:
+          - { name: "root", home: "/root" }
+      when: narokuu_user_check.rc != 0
+
+    # Ensure Neofetch runs on startup for each target user
     - name: Ensure Neofetch runs on startup
       lineinfile:
-        path: "{{ target_home }}/.bashrc"
+        path: "{{ item.home }}/.bashrc"
         line: "neofetch"
         state: present
         create: yes
+      loop: "{{ target_users }}"
 
-    # Ensure Neofetch config directory exists for the target user
+    # Ensure Neofetch config directory exists for each target user
     - name: Ensure Neofetch config directory exists
       file:
-        path: "{{ target_home }}/.config/neofetch"
+        path: "{{ item.home }}/.config/neofetch"
         state: directory
-        owner: "{{ target_user }}"
-        group: "{{ target_user }}"
+        owner: "{{ item.name }}"
+        group: "{{ item.name }}"
         mode: '0755'
+      loop: "{{ target_users }}"
 
-    # Create or update Neofetch config file for the target user
+    # Create or update Neofetch config file for each target user
     - name: Create or update Neofetch config file
       copy:
-        dest: "{{ target_home }}/.config/neofetch/config.conf"
+        dest: "{{ item.home }}/.config/neofetch/config.conf"
         content: |
           # Neofetch configuration file
           # See https://github.com/dylanaraps/neofetch/wiki/Customizing-Info for customization options
@@ -74,11 +79,7 @@
             info "Disk" disk
             info "IP Address" ip
           }
-        owner: "{{ target_user }}"
-        group: "{{ target_user }}"
+        owner: "{{ item.name }}"
+        group: "{{ item.name }}"
         mode: '0644'
-
-    # Optional: Test SSH authentication using the specified key
-    - name: Test SSH authentication
-      command: ssh -i /path/to/{{ ssh_key }} {{ target_user }}@{{ inventory_hostname }} "echo 'SSH test successful'"
-      ignore_errors: yes
+      loop: "{{ target_users }}"
